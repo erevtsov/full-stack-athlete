@@ -188,7 +188,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hybrid-athlete"
+name = "full-stack-athlete"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -217,7 +217,7 @@ typecheck = [
 
 [package.metadata]
 requires-dist = [
-    { name = "hybrid-athlete", extras = ["test", "lint", "typecheck"], marker = "extra == 'dev'" },
+    { name = "full-stack-athlete", extras = ["test", "lint", "typecheck"], marker = "extra == 'dev'" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.100" },
     { name = "mypy", marker = "extra == 'typecheck'", specifier = ">=1.10" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },

@@ -1,4 +1,4 @@
-# hybrid-athlete — Interaction Design
+# full-stack-athlete — Interaction Design
 
 > Decisions on how users interact with the library, made 2026-10-10. Companion to [`architecture.md`](architecture.md), which describes the behavior being ported and the proposed internals. Where the two conflict on interaction (triggers, feedback entry, config), this document wins. Implementation details are still being designed and are not recorded here.
 

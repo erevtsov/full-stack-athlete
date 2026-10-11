@@ -1,4 +1,4 @@
-# hybrid-athlete
+# full-stack-athlete
 
 ## Project Overview
 - Library for turning a prompt-driven daily strength/running/mobility
@@ -16,7 +16,7 @@
 - `uv run pytest` — run tests with coverage
 - `uv run ruff check src/ tests/` — lint
 - `uv run mypy` — type-check
-- `uv run hybrid-athlete` — placeholder CLI command (prints version; Typer collapses to the single registered command when there's only one)
+- `uv run full-stack-athlete` (alias `fsa`) — placeholder CLI command (prints version; Typer collapses to the single registered command when there's only one)
 
 ## Automation & Verification
 - `just check` is the single CI-authoritative gate — `.github/workflows/ci.yml` runs this exact command, nothing more, nothing less. Locally and in CI it always means: `ruff check src/ tests/`, `ruff format --check src/ tests/`, `mypy`, `pytest`, in that order, fail-fast.
@@ -26,7 +26,7 @@
 - Use pydantic for domain models once they exist — not dataclasses.
 - Explicit over implicit; no magic numbers; no commented-out code; no bare `except`; decompose functions over ~30 lines.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-- Use `importlib.metadata.version("hybrid-athlete")` for `__version__` — never hardcode it.
+- Use `importlib.metadata.version("full-stack-athlete")` for `__version__` — never hardcode it.
 
 ## Testing Rules
 - Test-first for anything beyond a trivial change.

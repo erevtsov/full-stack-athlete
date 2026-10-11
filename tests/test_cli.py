@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from hybrid_athlete.cli import app
+from full_stack_athlete.cli import app
 
 runner = CliRunner()
 
