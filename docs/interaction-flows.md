@@ -192,7 +192,9 @@ Deterministic. The wizard writes the same YAML a person would hand-edit.
 
 ### B1 · Scheduled `run`
 
-The main flow. Every hexagon can exit `needs_llm` when the provider is deferred (§1).
+The main flow, shown as an overview and then three stages. Every hexagon can exit `needs_llm` when the provider is deferred (§1).
+
+**Overview**
 
 ```mermaid
 flowchart TD
@@ -202,7 +204,28 @@ flowchart TD
     classDef llm fill:#ffe0b2,stroke:#e65100,color:#000
     classDef human fill:#f3e5f5,stroke:#6a1b9a,color:#000
 
-    T(["trigger: routine or scheduler"]):::human --> load("load_context<br/>Store.load_history last 14 days"):::port
+    T(["trigger: routine or scheduler"]):::human --> S1("1 · Load and sync<br/>Store, Device"):::port
+    S1 --> S2["2 · Reconcile<br/>R1–R12, L1 if R13"]:::core
+    S2 --> S3["3 · Apply and bookkeeping<br/>L7 at cycle close"]:::core
+    S3 --> S4["4 · Derive state, decide session<br/>L2 if borderline"]:::core
+    S4 --> S5["5 · Generate and validate<br/>L3 if pools exhausted"]:::core
+    S5 --> S6{{"6 · L4 context narrative"}}:::llm
+    S6 --> S7("7 · Write note, build, push, verify"):::port
+    S7 --> S8{{"8 · L5 summary"}}:::llm
+    S8 --> S9("9 · Notify"):::port
+```
+
+**Stages 1–3: load, sync, reconcile, apply**
+
+```mermaid
+flowchart TD
+    classDef core fill:#d6f5d6,stroke:#2e7d32,color:#000
+    classDef orch fill:#eeeeee,stroke:#555,color:#000
+    classDef port fill:#dbeafe,stroke:#1e40af,color:#000
+    classDef llm fill:#ffe0b2,stroke:#e65100,color:#000
+    classDef human fill:#f3e5f5,stroke:#6a1b9a,color:#000
+
+    T(["trigger: routine or scheduler"]):::human --> load("load_context<br/>Store.load_history, last 14 days"):::port
     load --> roll("monthly_rollup<br/>Store moves loose prior-month notes"):::port
     roll --> sync("garmin_sync<br/>Device.activities + wellness"):::port
     sync -->|"ok"| rec["reconcile_date × N<br/>classifier R1–R12 (see B5)"]:::core
@@ -214,24 +237,51 @@ flowchart TD
     book -->|"cycle closes, AMRAP 10+"| L7{{"L7 choose_tm_bump"}}:::llm
     L7 --> derive
     book --> derive["derive_training_state"]:::core
-    derive --> decide["decide_session_type<br/>rotation, overrides, fatigue, tie-break, safety filters"]:::core
+    derive --> NEXT(["continues in stages 4–6"]):::orch
+```
+
+**Stages 4–6: decide, generate, validate, narrate**
+
+```mermaid
+flowchart TD
+    classDef core fill:#d6f5d6,stroke:#2e7d32,color:#000
+    classDef orch fill:#eeeeee,stroke:#555,color:#000
+    classDef port fill:#dbeafe,stroke:#1e40af,color:#000
+    classDef llm fill:#ffe0b2,stroke:#e65100,color:#000
+    classDef human fill:#f3e5f5,stroke:#6a1b9a,color:#000
+
+    IN(["training state from stages 1–3"]):::orch --> decide["decide_session_type<br/>rotation, overrides, fatigue,<br/>tie-break, safety filters"]:::core
     decide -->|"borderline wellness"| L2{{"L2 weigh_wellness"}}:::llm
     L2 --> route
     decide --> route{"session type"}
-    route -->|"lifting, running, mobility, power"| gen["generate_* + attach_blocks"]:::core
-    route -->|"rest"| summ
-    gen --> val["validate_session<br/>equipment, injuries, rotation, substitutions"]:::core
+    route -->|"lifting, running,<br/>mobility, power"| gen["generate_* + attach_blocks"]:::core
+    route -->|"rest"| REST(["rest day: skip to stage 8"]):::orch
+    gen --> val["validate_session<br/>equipment, injuries, rotation,<br/>substitutions"]:::core
     val -->|"violations"| repair["repair_session<br/>swap from the program's pools"]:::core
     repair --> val
     repair -->|"pools exhausted"| L3{{"L3 pick_replacement"}}:::llm
     L3 --> val
     val -->|"ok"| L4{{"L4 write_context_narrative"}}:::llm
-    L4 --> write("write_note<br/>Store refuses to overwrite logged sets"):::port
+    L4 --> NEXT(["continues in stages 7–9"]):::orch
+```
+
+**Stages 7–9: write, push, verify, summarize, notify**
+
+```mermaid
+flowchart TD
+    classDef core fill:#d6f5d6,stroke:#2e7d32,color:#000
+    classDef orch fill:#eeeeee,stroke:#555,color:#000
+    classDef port fill:#dbeafe,stroke:#1e40af,color:#000
+    classDef llm fill:#ffe0b2,stroke:#e65100,color:#000
+    classDef human fill:#f3e5f5,stroke:#6a1b9a,color:#000
+
+    IN(["validated session + narrative"]):::orch --> write("write_note<br/>Store refuses to overwrite logged sets"):::port
     write --> build("build_garmin_workout<br/>Device adapter, applies substitutions"):::port
     build --> push("push_and_schedule<br/>clear then schedule, Epix only"):::port
     push --> ver("verify_push<br/>re-fetch and compare to known values"):::port
     ver -->|"mismatch, retries ≤ 2"| build
     ver -->|"ok"| summ{{"L5 summarize"}}:::llm
+    REST(["rest day"]):::orch --> summ
     summ --> notify("notify<br/>Notifier.send, silent if nothing happened"):::port
     notify --> done(["exit done + summary"]):::human
 ```
@@ -247,7 +297,7 @@ flowchart TD
 Failure policy from architecture.md §12.
 
 ```mermaid
-flowchart TD
+flowchart LR
     classDef core fill:#d6f5d6,stroke:#2e7d32,color:#000
     classDef port fill:#dbeafe,stroke:#1e40af,color:#000
     classDef human fill:#f3e5f5,stroke:#6a1b9a,color:#000
@@ -289,32 +339,32 @@ This is the only point at which Claude's own reasoning is part of a run.
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as Caller (Claude routine)
+    participant C as Caller (Claude)
     participant CLI as CLI
-    participant G as Graph (LangGraph)
-    participant K as Core (pure rules)
-    participant P as Ports (Store, Device, Notifier)
-    participant S as Checkpoint (SQLite)
+    participant G as Graph
+    participant K as Core
+    participant P as Ports
+    participant S as Checkpoint
 
     C->>CLI: run --date today
-    CLI->>G: invoke(thread = day-DATE)
+    CLI->>G: invoke(thread day-DATE)
     loop deterministic nodes
-        G->>K: call a rule function
+        G->>K: rule function
         K-->>G: typed result
-        G->>P: sync / read / write
+        G->>P: sync, read, write
     end
     G->>K: build LLMRequest
-    G->>S: save checkpoint at interrupt
+    G->>S: save checkpoint
     G-->>CLI: paused
-    CLI-->>C: exit needs_llm + request JSON on stdout
-    Note over C: Claude fills the response schema.<br/>This is the only LLM step.
+    CLI-->>C: exit needs_llm + request JSON
+    Note over C: Claude fills the response schema (the only LLM step)
     C->>CLI: resume --thread --answer JSON
     CLI->>G: resume(answer)
-    G->>K: validate answer against response_model
+    G->>K: validate against response_model
     alt valid
-        G->>G: continue after the interrupted node
+        G->>G: continue
     else invalid
-        G-->>CLI: paused again, with the validation error
+        G-->>CLI: paused again + error
         CLI-->>C: exit needs_llm (retry n of N)
     end
     G-->>CLI: done + summary
@@ -328,7 +378,7 @@ Autonomous mode removes the pause and resume (steps 8 to 11). The configured pro
 B1's `reconcile_date` node, run on its own (**Proposed:** as a subgraph reusing the B1 nodes). The classifier is where the most rules and the narrowest LLM use meet.
 
 ```mermaid
-flowchart TD
+flowchart LR
     classDef core fill:#d6f5d6,stroke:#2e7d32,color:#000
     classDef port fill:#dbeafe,stroke:#1e40af,color:#000
     classDef llm fill:#ffe0b2,stroke:#e65100,color:#000
@@ -445,7 +495,7 @@ LLM touches only the parse. Persisting the effects, choosing the re-entry node, 
 Same flow as C1 with the append-only injury log:
 
 ```mermaid
-flowchart LR
+flowchart TD
     classDef core fill:#d6f5d6,stroke:#2e7d32,color:#000
     classDef port fill:#dbeafe,stroke:#1e40af,color:#000
     classDef llm fill:#ffe0b2,stroke:#e65100,color:#000
