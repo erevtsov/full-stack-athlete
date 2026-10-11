@@ -1,4 +1,4 @@
-# hybrid-athlete — Implementation Design
+# full-stack-athlete — Implementation Design
 
 > **Status: in progress.** The pure-core, thin-graph structure is decided; the other items in §9 are still open. Describes how the code is organized, for the behavior in [`architecture.md`](architecture.md) and the user-facing decisions in [`interaction-design.md`](interaction-design.md). Items marked **Decision needed** are listed in §9. No application code exists yet, and none should be written until this is approved.
 
@@ -30,7 +30,7 @@ adapters      implement ports (Garmin, markdown vault, push notifier, LLM provid
 ## 3. Package layout
 
 ```
-src/hybrid_athlete/
+src/full_stack_athlete/
   models/        athlete, session notes, device data, sessions, training state
   ports/         device.py  store.py  notifier.py  llm.py
   core/
@@ -48,7 +48,7 @@ tests/
   fixtures/      real notes + device JSON from Sep–Oct 2026
 ```
 
-This replaces the `lift_and_run/` layout in architecture.md §13. The distribution name is already `hybrid-athlete`.
+This replaces the `lift_and_run/` layout in architecture.md §13. The distribution is `full-stack-athlete`, the import package is `full_stack_athlete`, and the CLI is `full-stack-athlete` with a short alias `fsa`.
 
 ## 4. Graph nodes are wrappers
 
@@ -112,13 +112,13 @@ Garmin-specific rules from architecture.md §8 (plain-pound weights, device by n
 ## 9. Decisions needed
 
 1. ~~Confirm the pure-core, thin-graph structure~~ **Decided 2026-10-10** (§1, §4). Alternatives were a graph-centric design and a hand-written orchestrator with LangGraph only for the LLM pause. Both were judged worse.
-2. ~~Single package vs. separate distributions per adapter~~ **Decided 2026-10-10:** one package with adapter subpackages. Adapter-specific dependencies (e.g. the Garmin client) are optional extras such as `hybrid-athlete[garmin]`. Splitting into separate distributions later is mostly moving directories, since the layers are already kept apart.
+2. ~~Single package vs. separate distributions per adapter~~ **Decided 2026-10-10:** one package with adapter subpackages. Adapter-specific dependencies (e.g. the Garmin client) are optional extras such as `full-stack-athlete[garmin]`. Splitting into separate distributions later is mostly moving directories, since the layers are already kept apart.
 3. ~~Enforcing the layer rule in CI~~ **Decided 2026-10-10:** a plain pytest test that walks each module's imports with `ast` and fails on a forbidden boundary crossing (§2). No new dependency, and it runs in `just check`. `import-linter` stays an option if the rules get more complex.
 4. ~~Python version~~ **Decided 2026-10-10:** 3.14, since this is a new project. Compatibility was checked on 2026-10-10 in a throwaway venv (langgraph 1.2.14, langgraph-checkpoint-sqlite 3.1.1, pydantic 2.14.0, langchain-core 1.6.9): a graph with an `interrupt()`, a SQLite checkpoint and a `Command(resume=…)` in a second process-level compile ran correctly on CPython 3.14.3, and the interrupted node re-entered from its start as §5 assumes. Caveats: langgraph's PyPI classifiers list only up to 3.13, even though `requires-python` is `>=3.10`; and `langsmith` (pulled in by `langchain-core`) calls `asyncio.iscoroutinefunction`, which emits a `DeprecationWarning` on 3.14 and is slated for removal in 3.16. Do not turn warnings into errors in pytest without filtering that one. The upgrade is step 0 of the implementation plan (§10); no config has been changed yet. Switching needs `requires-python`, `.python-version` (currently 3.12, so CI is on 3.12), ruff `target-version` and mypy `python_version` changed together.
 5. ~~Dependencies~~ **Approved 2026-10-10**, to be added when the step that needs it starts, not before:
    - `langgraph` and `langgraph-checkpoint-sqlite`, with the graph wiring (§10 step 5).
    - `PyYAML`, with the config schema (§10 has no separate config step yet; it lands with the first step that needs config). Chosen over `ruamel.yaml` because the config is only read and validated; revisit if the future `init` wizard needs to rewrite a user's file in place.
-   - The Garmin client (`garminconnect`), as the optional extra `hybrid-athlete[garmin]`, with the Garmin adapter (§10 step 6).
+   - The Garmin client (`garminconnect`), as the optional extra `full-stack-athlete[garmin]`, with the Garmin adapter (§10 step 6).
 
    Any dependency beyond these still needs a fresh approval.
 

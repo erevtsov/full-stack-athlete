@@ -1,4 +1,4 @@
-# hybrid-athlete
+# full-stack-athlete
 
 Library for turning a prompt-driven daily strength/running/mobility training
 loop into a deterministic, tested Python core, orchestrated with LangGraph.
@@ -15,7 +15,7 @@ Install `just` (not a Python dependency): `brew install just` (macOS) or [see in
 ## Usage
 
 ```bash
-uv run hybrid-athlete
+uv run full-stack-athlete   # or the short alias: uv run fsa
 ```
 
 ## Development

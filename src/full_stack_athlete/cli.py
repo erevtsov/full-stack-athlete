@@ -1,10 +1,10 @@
-"""hybrid-athlete CLI — placeholder entry point."""
+"""full-stack-athlete CLI — placeholder entry point."""
 
 from __future__ import annotations
 
 import typer
 
-from hybrid_athlete import __version__
+from full_stack_athlete import __version__
 
 app = typer.Typer()
 

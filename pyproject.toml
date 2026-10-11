@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "hybrid-athlete"
+name = "full-stack-athlete"
 version = "0.1.0"
 description = "Hybrid strength/endurance training automation library"
 readme = "README.md"
@@ -13,7 +13,8 @@ dependencies = [
 ]
 
 [project.scripts]
-hybrid-athlete = "hybrid_athlete.cli:app"
+full-stack-athlete = "full_stack_athlete.cli:app"
+fsa = "full_stack_athlete.cli:app"
 
 [project.optional-dependencies]
 test = [
@@ -28,11 +29,11 @@ typecheck = [
     "mypy>=1.10",
 ]
 dev = [
-    "hybrid-athlete[test,lint,typecheck]",
+    "full-stack-athlete[test,lint,typecheck]",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hybrid_athlete"]
+packages = ["src/full_stack_athlete"]
 
 # ---------------------------------------------------------------------------
 # Ruff
@@ -45,7 +46,7 @@ target-version = "py312"
 select = ["E", "F", "I", "UP"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["hybrid_athlete"]
+known-first-party = ["full_stack_athlete"]
 
 # ---------------------------------------------------------------------------
 # Mypy
@@ -56,7 +57,7 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 mypy_path = "src"
-packages = ["hybrid_athlete"]
+packages = ["full_stack_athlete"]
 
 # ---------------------------------------------------------------------------
 # Pytest
@@ -64,13 +65,13 @@ packages = ["hybrid_athlete"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = [
-    "--cov=hybrid_athlete",
+    "--cov=full_stack_athlete",
     "--cov-report=term-missing",
     "-v",
 ]
 
 [tool.coverage.run]
-source = ["src/hybrid_athlete"]
+source = ["src/full_stack_athlete"]
 branch = true
 
 [tool.coverage.report]
